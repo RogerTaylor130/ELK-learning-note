@@ -1,0 +1,45 @@
+version: '3.7'
+services:
+  setup:
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    volumes:
+      - ${PWD}/certs:/usr/share/kibana/config/certs
+    command: > 
+      bash -c '
+        echo "Setting kibana_system password";
+        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://192.168.39.12:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
+        echo "All done!";
+      '
+  kibana:
+    depends_on:
+      - setup
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    volumes:
+      - ${PWD}/certs:/usr/share/kibana/config/certs
+      - kibanadata:/usr/share/kibana/data
+    ports:
+      - ${KIBANA_PORT}:5601
+    environment:
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=https://es-sim03:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+    mem_limit: ${MEM_LIMIT}
+    # healthcheck:
+    #   test:
+    #     [
+    #       "CMD-SHELL",
+    #       "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+    #     ]
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 120
+networks:
+  elastic-86-distributed_default:
+    external: true
+
+volumes:
+  kibanadata:
+    driver: local
+

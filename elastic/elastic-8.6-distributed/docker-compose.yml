@@ -1,0 +1,50 @@
+version: '3.7'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: ${NODE_NAME}
+    volumes:
+    #  - elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ${PWD}/certs:/usr/share/elasticsearch/config/certs
+      - esdata03:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      node.name: ${NODE_NAME}
+      cluster.name: ${CLUSTER_NAME}
+      # http.publish_host: ${HOST_IP} #new #will not effect the hand shake fail
+      cluster.initial_master_nodes: es-sim01,es-sim02,es-sim03
+      discovery.seed_hosts: ${DISCOVERY_SEED}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      # network.host: 0.0.0.0
+      network.bind_host: ${NODE_NAME}
+      network.publish_host: ${HOST_IP} #new
+      transport.profiles.default.port: 9300 #new
+      bootstrap.memory_lock: true
+      xpack.security.enabled: true
+      xpack.security.http.ssl.enabled: true
+      xpack.security.enrollment.enabled: true
+      xpack.security.http.ssl.key: certs/${NODE_NAME}/${NODE_NAME}.key
+      xpack.security.http.ssl.certificate: certs/${NODE_NAME}/${NODE_NAME}.crt
+      xpack.security.http.ssl.certificate_authorities: certs/ca/ca.crt
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.transport.ssl.key: certs/${NODE_NAME}/${NODE_NAME}.key
+      xpack.security.transport.ssl.certificate: certs/${NODE_NAME}/${NODE_NAME}.crt
+      xpack.security.transport.ssl.certificate_authorities: certs/ca/ca.crt
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.license.self_generated.type: ${LICENSE}
+      # network.host: ${HOST_IP}
+    mem_limit: ${MEM_LIMIT}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+volumes:
+  certs:
+    driver: local
+  esdata03:
+    driver: local
+
+  
